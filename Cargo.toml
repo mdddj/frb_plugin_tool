@@ -10,7 +10,7 @@ homepage = "https://github.com/mdddj/frb_plugin_tool"
 repository = "https://github.com/mdddj/frb_plugin_tool"
 keywords = ["dart", "plugin", "flutter", "frb", "rust"]
 categories = ["command-line-utilities"]
-include = ["temp/**"]
+include = ["temp/**", "/src/**"]
 
 [dependencies]
 duct = "0.13.7"
