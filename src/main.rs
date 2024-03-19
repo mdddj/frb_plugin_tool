@@ -74,7 +74,7 @@ async fn add_rust_lib_project(plugin_name: &str) {
     .unwrap();
     p.push("rust");
     p.push("Cargo.toml");
-    let txt = get_temp("Cargo.toml", |ctx| ctx.insert("name", plugin_name));
+    let txt = get_temp("Cargo.toml", |ctx| ctx.insert("name", plugin_name)).await;
     let mut cargo_file = File::create(p).await.expect("获取cargo.toml文件失败");
     cargo_file
         .write_all(txt.as_bytes())
@@ -82,15 +82,32 @@ async fn add_rust_lib_project(plugin_name: &str) {
         .expect("写入配置失败");
 }
 
+///从github上加载
+async fn fetch_github_temp_file_string(file_name: &str) -> Result<String, reqwest::Error> {
+    let response = reqwest::get(
+        format!("https://raw.githubusercontent.com/mdddj/frb_plugin_tool/main/temp/{file_name}")
+            .as_str(),
+    )
+    .await?
+    .text()
+    .await?;
+    Ok(response)
+}
+
 ///获取模板函数
-fn get_temp<F: FnMut(&mut Context) -> ()>(file_name: &str, mut handle: F) -> String {
+async fn get_temp<F: FnMut(&mut Context) -> ()>(file_name: &str, mut handle: F) -> String {
     let mut tera = Tera::default();
-    tera.add_template_file(format!("./temp/{file_name}"), Some(file_name))
-        .unwrap();
-    let mut ctx = tera::Context::new();
-    handle(&mut ctx);
-    let txt = tera.render(file_name, &ctx).unwrap();
-    txt
+    let txt = fetch_github_temp_file_string(file_name).await;
+    match txt {
+        Ok(temp_txt) => {
+            tera.add_raw_template(file_name, &temp_txt).unwrap();
+            let mut ctx = tera::Context::new();
+            handle(&mut ctx);
+            let txt = tera.render(file_name, &ctx).unwrap();
+            txt
+        }
+        Err(err) => panic!("加载失败{}", err),
+    }
 }
 
 ///添加frb配置文件
@@ -106,7 +123,7 @@ async fn add_frb_yaml_file(plugin_name: &str) {
         .open(dir)
         .await
         .unwrap();
-    let text = get_temp(file_name, |_| {});
+    let text = get_temp(file_name, |_| {}).await;
     file.write_all(text.as_bytes())
         .await
         .expect("写入frb配置失败");
@@ -122,7 +139,7 @@ async fn add_macos_script(plugin_name: &str) {
     let mut file = File::create(dir)
         .await
         .expect(&format!("读取{file_name}失败"));
-    let temp = get_temp("plugin.podspec", |ctx| ctx.insert("name", plugin_name));
+    let temp = get_temp("plugin.podspec", |ctx| ctx.insert("name", plugin_name)).await;
     file.write_all(temp.as_bytes())
         .await
         .expect(&format!("写入{file_name}配置失败"));
@@ -138,7 +155,7 @@ async fn add_ios_script(plugin_name: &str) {
     let mut file = File::create(dir)
         .await
         .expect(&format!("读取{file_name}失败"));
-    let temp = get_temp("plugin.podspec", |ctx| ctx.insert("name", plugin_name));
+    let temp = get_temp("plugin.podspec", |ctx| ctx.insert("name", plugin_name)).await;
     file.write_all(temp.as_bytes())
         .await
         .expect(&format!("写入{file_name}配置失败"));
@@ -153,7 +170,7 @@ async fn add_windows_script(plugin_name: &str) {
     let mut file = File::create(dir)
         .await
         .expect(&format!("读取windows CMakeLists.txt失败"));
-    let temp = get_temp("cmake.txt", |ctx| ctx.insert("name", plugin_name));
+    let temp = get_temp("cmake.txt", |ctx| ctx.insert("name", plugin_name)).await;
     file.write_all(temp.as_bytes())
         .await
         .expect(&format!("写入windows CMakeLists.txt配置失败"));
@@ -168,7 +185,7 @@ async fn add_linux_script(plugin_name: &str) {
     let mut file = File::create(dir)
         .await
         .expect(&format!("读取linux CMakeLists.txt失败"));
-    let temp = get_temp("cmake.txt", |ctx| ctx.insert("name", plugin_name));
+    let temp = get_temp("cmake.txt", |ctx| ctx.insert("name", plugin_name)).await;
     file.write_all(temp.as_bytes())
         .await
         .expect(&format!("写入linux CMakeLists.txt配置失败"));
@@ -183,7 +200,7 @@ async fn add_android_script(plugin_name: &str) {
     let mut file = File::create(dir)
         .await
         .expect(&format!("读取android build.gradle失败"));
-    let temp = get_temp("build.gradle", |ctx| ctx.insert("name", plugin_name));
+    let temp = get_temp("build.gradle", |ctx| ctx.insert("name", plugin_name)).await;
     file.write_all(temp.as_bytes())
         .await
         .expect(&format!("写入build.gradle配置失败"));
@@ -197,7 +214,7 @@ async fn add_pubspec_script(plugin_name: &str) {
     let mut file = File::create(dir)
         .await
         .expect(&format!("读取pubspec.yaml失败"));
-    let temp = get_temp("pubspec.yaml", |ctx| ctx.insert("name", plugin_name));
+    let temp = get_temp("pubspec.yaml", |ctx| ctx.insert("name", plugin_name)).await;
     file.write_all(temp.as_bytes())
         .await
         .expect(&format!("写入pubspec.yaml配置失败"));
