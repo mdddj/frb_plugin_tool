@@ -2,8 +2,14 @@
 name = "frb_plugin_tool"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = ["hlxsmail@gmail.com"]
+license = "MIT OR Apache-2.0"
+description = "dart rust frb 快速生成项目脚本"
+readme = "README.md"
+homepage = "https://github.com/mdddj/frb_plugin_tool"
+repository = "https://github.com/mdddj/frb_plugin_tool"
+keywords = ["dart", "plugin", "flutter", "frb", "rust"]
+categories = ["command-line-utilities"]
 
 [dependencies]
 duct = "0.13.7"
