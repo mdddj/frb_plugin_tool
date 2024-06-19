@@ -1,6 +1,6 @@
 [package]
 name = "frb_plugin_tool"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 authors = ["hlxsmail@gmail.com"]
 license = "MIT OR Apache-2.0"
@@ -16,5 +16,5 @@ include = ["/temp/**", "/src/**"]
 duct = "0.13.7"
 futures = "0.3.30"
 reqwest = { version = "0.11.26" }
-tera = "1.x"
-tokio = { version = "1.35.1", features = ["full"] }
+tera = "1.19.0"
+tokio = { version = "1.36.0", features = ["full"] }

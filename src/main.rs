@@ -101,7 +101,7 @@ async fn get_temp<F: FnMut(&mut Context) -> ()>(file_name: &str, mut handle: F) 
     match txt {
         Ok(temp_txt) => {
             tera.add_raw_template(file_name, &temp_txt).unwrap();
-            let mut ctx = tera::Context::new();
+            let mut ctx = Context::new();
             handle(&mut ctx);
             let txt = tera.render(file_name, &ctx).unwrap();
             txt
@@ -169,11 +169,11 @@ async fn add_windows_script(plugin_name: &str) {
     dir.push("CMakeLists.txt");
     let mut file = File::create(dir)
         .await
-        .expect(&format!("读取windows CMakeLists.txt失败"));
+        .expect(&"读取windows CMakeLists.txt失败".to_string());
     let temp = get_temp("cmake.txt", |ctx| ctx.insert("name", plugin_name)).await;
     file.write_all(temp.as_bytes())
         .await
-        .expect(&format!("写入windows CMakeLists.txt配置失败"));
+        .expect(&"写入windows CMakeLists.txt配置失败".to_string());
 }
 
 ///添加linux脚本
@@ -184,11 +184,11 @@ async fn add_linux_script(plugin_name: &str) {
     dir.push("CMakeLists.txt");
     let mut file = File::create(dir)
         .await
-        .expect(&format!("读取linux CMakeLists.txt失败"));
+        .expect(&"读取linux CMakeLists.txt失败".to_string());
     let temp = get_temp("cmake.txt", |ctx| ctx.insert("name", plugin_name)).await;
     file.write_all(temp.as_bytes())
         .await
-        .expect(&format!("写入linux CMakeLists.txt配置失败"));
+        .expect(&"写入linux CMakeLists.txt配置失败".to_string());
 }
 
 ///添加android脚本
@@ -199,11 +199,11 @@ async fn add_android_script(plugin_name: &str) {
     dir.push("build.gradle");
     let mut file = File::create(dir)
         .await
-        .expect(&format!("读取android build.gradle失败"));
+        .expect(&"读取android build.gradle失败".to_string());
     let temp = get_temp("build.gradle", |ctx| ctx.insert("name", plugin_name)).await;
     file.write_all(temp.as_bytes())
         .await
-        .expect(&format!("写入build.gradle配置失败"));
+        .expect(&"写入build.gradle配置失败".to_string());
 }
 
 ///添加yaml依赖
@@ -213,11 +213,11 @@ async fn add_pubspec_script(plugin_name: &str) {
     dir.push("pubspec.yaml");
     let mut file = File::create(dir)
         .await
-        .expect(&format!("读取pubspec.yaml失败"));
+        .expect(&"读取pubspec.yaml失败".to_string());
     let temp = get_temp("pubspec.yaml", |ctx| ctx.insert("name", plugin_name)).await;
     file.write_all(temp.as_bytes())
         .await
-        .expect(&format!("写入pubspec.yaml配置失败"));
+        .expect(&"写入pubspec.yaml配置失败".to_string());
 }
 
 ///添加示例rust目录和文件 /api/hello.rs
