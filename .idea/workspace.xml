@@ -8,8 +8,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d7ab8bb5-233b-4367-94ea-aa159cd48060" name="更改" comment="升级frb">
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/temp/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/temp/Cargo.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/temp/pubspec.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/temp/pubspec.yaml" afterDir="false" />
     </list>
@@ -112,7 +111,8 @@
       <updated>1705627167566</updated>
       <workItem from="1705627168581" duration="497000" />
       <workItem from="1718766776147" duration="530000" />
-      <workItem from="1718861066575" duration="35000" />
+      <workItem from="1718861066575" duration="158000" />
+      <workItem from="1719034973254" duration="57000" />
     </task>
     <task id="LOCAL-00001" summary="升级frb">
       <option name="closed" value="true" />
@@ -122,7 +122,15 @@
       <option name="project" value="LOCAL" />
       <updated>1718767064751</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="升级frb">
+      <option name="closed" value="true" />
+      <created>1718861118913</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1718861118913</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
