@@ -7,7 +7,7 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d7ab8bb5-233b-4367-94ea-aa159cd48060" name="更改" comment="升级到2.0.0">
+    <list default="true" id="d7ab8bb5-233b-4367-94ea-aa159cd48060" name="更改" comment="release 2.1.0">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/temp/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/temp/Cargo.toml" afterDir="false" />
@@ -115,7 +115,8 @@
       <workItem from="1718861066575" duration="158000" />
       <workItem from="1719034973254" duration="201000" />
       <workItem from="1719041036712" duration="15000" />
-      <workItem from="1720514151652" duration="29000" />
+      <workItem from="1720514151652" duration="119000" />
+      <workItem from="1723878617928" duration="23000" />
     </task>
     <task id="LOCAL-00001" summary="升级frb">
       <option name="closed" value="true" />
@@ -149,7 +150,15 @@
       <option name="project" value="LOCAL" />
       <updated>1719035093021</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="release 2.1.0">
+      <option name="closed" value="true" />
+      <created>1720514195638</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1720514195638</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -158,6 +167,7 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="升级frb" />
     <MESSAGE value="升级到2.0.0" />
-    <option name="LAST_COMMIT_MESSAGE" value="升级到2.0.0" />
+    <MESSAGE value="release 2.1.0" />
+    <option name="LAST_COMMIT_MESSAGE" value="release 2.1.0" />
   </component>
 </project>
