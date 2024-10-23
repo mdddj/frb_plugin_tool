@@ -50,6 +50,7 @@
   "keyToString": {
     "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.rust.reset.selective.auto.import": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "git-widget-placeholder": "main",
@@ -125,7 +126,8 @@
       <workItem from="1724030305274" duration="130000" />
       <workItem from="1725005627177" duration="33000" />
       <workItem from="1726813458718" duration="2055000" />
-      <workItem from="1728452372176" duration="77000" />
+      <workItem from="1728452372176" duration="209000" />
+      <workItem from="1729653621422" duration="58000" />
     </task>
     <task id="LOCAL-00001" summary="升级frb">
       <option name="closed" value="true" />
