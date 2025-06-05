@@ -11,13 +11,9 @@
     </cargoProject>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d7ab8bb5-233b-4367-94ea-aa159cd48060" name="更改" comment="0.2.1">
+    <list default="true" id="d7ab8bb5-233b-4367-94ea-aa159cd48060" name="更改" comment="升级frb及相关依赖版本">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/temp/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/temp/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/temp/pubspec.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/temp/pubspec.yaml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -139,7 +135,9 @@
       <workItem from="1740116640837" duration="273000" />
       <workItem from="1741672271699" duration="359000" />
       <workItem from="1749084988436" duration="13000" />
-      <workItem from="1749085009971" duration="193000" />
+      <workItem from="1749085009971" duration="842000" />
+      <workItem from="1749089159184" duration="7000" />
+      <workItem from="1749089175114" duration="50000" />
     </task>
     <task id="LOCAL-00001" summary="升级frb">
       <option name="closed" value="true" />
@@ -213,11 +211,30 @@
       <option name="project" value="LOCAL" />
       <updated>1736497004551</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="升级frb及相关依赖版本">
+      <option name="closed" value="true" />
+      <created>1749085226243</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1749085226243</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="升级frb" />
@@ -226,6 +243,7 @@
     <MESSAGE value="release 2.2.0" />
     <MESSAGE value="release 2.3.0" />
     <MESSAGE value="0.2.1" />
-    <option name="LAST_COMMIT_MESSAGE" value="0.2.1" />
+    <MESSAGE value="升级frb及相关依赖版本" />
+    <option name="LAST_COMMIT_MESSAGE" value="升级frb及相关依赖版本" />
   </component>
 </project>
