@@ -4,13 +4,18 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="CargoProjects">
-    <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
+    <cargoProject FILE="$PROJECT_DIR$/Cargo.toml">
+      <package file="$PROJECT_DIR$">
+        <enabledFeature name="default" />
+      </package>
+    </cargoProject>
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d7ab8bb5-233b-4367-94ea-aa159cd48060" name="更改" comment="0.2.1">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/temp/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/temp/Cargo.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/temp/pubspec.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/temp/pubspec.yaml" afterDir="false" />
     </list>
@@ -132,7 +137,9 @@
       <workItem from="1736996895808" duration="207000" />
       <workItem from="1738721354187" duration="59000" />
       <workItem from="1740116640837" duration="273000" />
-      <workItem from="1741672271699" duration="149000" />
+      <workItem from="1741672271699" duration="359000" />
+      <workItem from="1749084988436" duration="13000" />
+      <workItem from="1749085009971" duration="193000" />
     </task>
     <task id="LOCAL-00001" summary="升级frb">
       <option name="closed" value="true" />
