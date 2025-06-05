@@ -13,7 +13,7 @@ categories = ["command-line-utilities"]
 include = ["/temp/**", "/src/**"]
 
 [dependencies]
-duct = "0.13.7"
+duct = "1.0.0"
 futures = "0.3.31"
 reqwest = { version = "0.12.12" }
 tera = "1.20.0"

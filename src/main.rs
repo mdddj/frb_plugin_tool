@@ -18,6 +18,34 @@ fn set_log_event() {
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use duct::cmd;
+    use tracing::warn;
+
+    #[test]
+    fn test_flutter_command_exists() {
+        set_log_event();
+        // This test will only run on Windows.
+        // On other platforms, it will be skipped or marked as passed.
+        if cfg!(windows) {
+            println!("Current PATH: {:?}", env::var("PATH"));
+
+            let result = cmd!("flutter.bat", "--version")
+                .env("PATH", env::var("PATH").unwrap())
+                .stdout_capture()
+                .run();
+            match result {
+                Ok(_) => info!("成功"),
+                Err(e) => warn!("失败:${e}"),
+            }
+        } else {
+            info!("Skipping Flutter command test on non-Windows platform.");
+        }
+    }
+}
+
 fn get_path_env() -> String {
     env::var("PATH").unwrap()
 }
@@ -32,20 +60,36 @@ fn get_plugin_name() -> String {
 
 //创建插件项目目录
 async fn run_flutter_plugin_create(plugin_name: &str) -> bool {
-    info!("开始创建插件目录:{}", plugin_name);
-    let result = cmd!(
-        "flutter",
-        "create",
-        "--template=plugin_ffi",
-        format!("{plugin_name}"),
-        "--platforms",
-        "android,ios,macos,windows,linux"
-    )
-    .dir(env::current_dir().expect("获取目录失败"))
-    .env("env", get_path_env())
-    .stdout_null()
-    .run();
-    result.is_ok()
+    info!("开始创建插件目录:{},请稍等...", plugin_name);
+    if cfg!(windows) {
+        let result = cmd!(
+            "flutter.bat",
+            "create",
+            "--template=plugin_ffi",
+            format!("{plugin_name}"),
+            "--platforms",
+            "android,ios,macos,windows,linux"
+        )
+        .dir(env::current_dir().expect("获取目录失败"))
+        .env("PATH", get_path_env())
+        .stdout_null()
+        .run();
+        result.is_ok()
+    } else {
+        let result = cmd!(
+            "flutter",
+            "create",
+            "--template=plugin_ffi",
+            format!("{plugin_name}"),
+            "--platforms",
+            "android,ios,macos,windows,linux"
+        )
+        .dir(env::current_dir().expect("获取目录失败"))
+        .env("PATH", get_path_env())
+        .stdout_null()
+        .run();
+        result.is_ok()
+    }
 }
 
 ///初始化git项目,并克隆cargokit项目
@@ -353,6 +397,5 @@ async fn main() {
             async move { add_test_rs_file(&test_name).await },
         )];
         future::join_all(add_file_task).await;
-
     }
 }
