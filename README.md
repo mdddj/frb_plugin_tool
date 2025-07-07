@@ -1,6 +1,9 @@
 # frb_plugin_tool
 
 
+## 可以让你写的 flutter rust 包上传到pub.dev的生成工具
+
+
 qq群反馈：706438100
 
 快速生成dart rust ffi 项目结构脚本
