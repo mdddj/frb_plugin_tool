@@ -11,10 +11,7 @@
     </cargoProject>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d7ab8bb5-233b-4367-94ea-aa159cd48060" name="更改" comment="升级frb及相关依赖版本">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
-    </list>
+    <list default="true" id="d7ab8bb5-233b-4367-94ea-aa159cd48060" name="更改" comment="release 0.2.6" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -137,7 +134,7 @@
       <workItem from="1749084988436" duration="13000" />
       <workItem from="1749085009971" duration="842000" />
       <workItem from="1749089159184" duration="7000" />
-      <workItem from="1749089175114" duration="50000" />
+      <workItem from="1749089175114" duration="101000" />
     </task>
     <task id="LOCAL-00001" summary="升级frb">
       <option name="closed" value="true" />
@@ -219,7 +216,15 @@
       <option name="project" value="LOCAL" />
       <updated>1749085226243</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="release 0.2.6">
+      <option name="closed" value="true" />
+      <created>1749089244027</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1749089244027</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -244,6 +249,7 @@
     <MESSAGE value="release 2.3.0" />
     <MESSAGE value="0.2.1" />
     <MESSAGE value="升级frb及相关依赖版本" />
-    <option name="LAST_COMMIT_MESSAGE" value="升级frb及相关依赖版本" />
+    <MESSAGE value="release 0.2.6" />
+    <option name="LAST_COMMIT_MESSAGE" value="release 0.2.6" />
   </component>
 </project>

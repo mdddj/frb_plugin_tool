@@ -1,5 +1,8 @@
 # frb_plugin_tool
 
+
+qq群反馈：706438100
+
 快速生成dart rust ffi 项目结构脚本
 
 
@@ -17,3 +20,5 @@ cargo install frb_plugin_tool
 ```bash
 frb_plugin_tool
 ```
+
+
