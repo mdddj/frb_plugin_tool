@@ -409,7 +409,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "frb_plugin_tool"
+name = "frb_plugin_tool_ohos"
 version = "0.2.7"
 dependencies = [
  "clap",
