@@ -1,14 +1,18 @@
 use duct::cmd;
 use futures::future;
-use std::{env, io, sync::Arc};
+use std::{env, io, path::PathBuf, sync::Arc};
 use tera::{Context, Tera};
 use tokio::{
-    fs::{create_dir, File, OpenOptions},
+    fs::{create_dir, read_to_string, write, File, OpenOptions},
     io::AsyncWriteExt,
     task,
 };
 use tracing::info;
 use tracing_subscriber::fmt;
+use walkdir::WalkDir;
+
+//插件模板文件仓库地址
+const OHOS_DIRECTORY_GIT_URL: &str = "https://github.com/mdddj/flutter_rust_plugin_ohos_temp";
 
 fn set_log_event() {
     // 初始化 tracing 子系统
@@ -18,11 +22,61 @@ fn set_log_event() {
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 }
 
+struct OhosGenerate {
+    plugin_name: String,
+}
+impl OhosGenerate {
+    fn create(plugin_name: String) -> OhosGenerate {
+        OhosGenerate { plugin_name }
+    }
+
+    //下载 ohos目录,和替换名称
+    async fn fetch_github_temp(self: &Self) {
+        let path = env::current_dir().expect("获取执行目录失败");
+        let _ = cmd!(
+            "git",
+            "clone",
+            format!("{}", OHOS_DIRECTORY_GIT_URL),
+            "ohos"
+        )
+        .dir(path)
+        .run()
+        .expect("下载ohos模板文件失败");
+    }
+
+    async fn releace_plugin_name(self: &Self) {
+        let plugin_name = self.plugin_name.clone();
+        let mut path = env::current_dir().expect("获取执行目录失败");
+        path.push(plugin_name.clone());
+        path.push("ohos");
+        let _ = replace_plugin_name_in_files(path, &plugin_name);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use duct::cmd;
     use tracing::warn;
+
+    //测试下载和替换
+    #[tokio::test]
+    async fn test_ohos_director_download() {
+        set_log_event();
+        let plugin_name = String::from("plugin_test");
+        let ohos_ = OhosGenerate::create(plugin_name.clone());
+        ohos_.fetch_github_temp().await;
+
+        //删除
+        let mut dir = env::current_dir().unwrap();
+        dir.push("ohos");
+        let _ = replace_plugin_name_in_files(dir.clone(), &plugin_name).await;
+        info!("开始删除 ohos目录");
+        let r = tokio::fs::remove_dir_all(dir).await;
+        if r.is_ok() {
+            info!("删除成功");
+        }
+    }
 
     #[test]
     fn test_flutter_command_exists() {
@@ -49,6 +103,66 @@ mod tests {
 fn get_path_env() -> String {
     env::var("PATH").unwrap()
 }
+
+/// 遍历目录并替换文件中的文本
+///
+/// # 参数
+/// * `dir_path` - 要遍历的目录路径
+/// * `file_name` - 用于替换 REPLACE_PLUGIN_NAME 的文本
+///
+/// # 示例
+/// ```
+/// let path = PathBuf::from("./my_project");
+/// replace_plugin_name_in_files(path, "my_plugin").await;
+/// ```
+async fn replace_plugin_name_in_files(dir_path: PathBuf, file_name: &str) -> io::Result<()> {
+    info!(
+        "开始替换目录 {:?} 中的 REPLACE_PLUGIN_NAME 为 {}",
+        dir_path, file_name
+    );
+
+    let mut replaced_count = 0;
+    let mut file_count = 0;
+
+    // 遍历目录中的所有文件
+    for entry in WalkDir::new(&dir_path)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_type().is_file())
+    {
+        let file_path = entry.path();
+
+        // 读取文件内容
+        match read_to_string(file_path).await {
+            Ok(content) => {
+                // 检查是否包含需要替换的文本
+                if content.contains("REPLACE_PLUGIN_NAME") {
+                    // 替换所有出现的 REPLACE_PLUGIN_NAME
+                    let new_content = content.replace("REPLACE_PLUGIN_NAME", file_name);
+
+                    // 写回文件
+                    match write(file_path, new_content).await {
+                        Ok(_) => {
+                            replaced_count += 1;
+                            info!("✅ 已替换文件: {:?}", file_path);
+                        }
+                        Err(e) => {
+                            info!("⚠️  写入文件失败 {:?}: {}", file_path, e);
+                        }
+                    }
+                }
+                file_count += 1;
+            }
+            Err(_) => {}
+        }
+    }
+
+    info!(
+        "✅ 替换完成! 共扫描 {} 个文件，替换了 {} 个文件",
+        file_count, replaced_count
+    );
+    Ok(())
+}
 //获取插件名
 fn get_plugin_name() -> String {
     let mut input = String::new();
@@ -68,7 +182,7 @@ async fn run_flutter_plugin_create(plugin_name: &str) -> bool {
             "--template=plugin_ffi",
             format!("{plugin_name}"),
             "--platforms",
-            "android,ios,macos,windows,linux"
+            "android,ios,macos,windows,linux,ohos"
         )
         .dir(env::current_dir().expect("获取目录失败"))
         .env("PATH", get_path_env())
@@ -76,13 +190,15 @@ async fn run_flutter_plugin_create(plugin_name: &str) -> bool {
         .run();
         result.is_ok()
     } else {
+        let _ = cmd!("fvm", "use", "custom_3.27-oh").run();
         let result = cmd!(
+            "fvm",
             "flutter",
             "create",
             "--template=plugin_ffi",
             format!("{plugin_name}"),
             "--platforms",
-            "android,ios,macos,windows,linux"
+            "android,ios,macos,windows,linux,ohos"
         )
         .dir(env::current_dir().expect("获取目录失败"))
         .env("PATH", get_path_env())
@@ -120,8 +236,8 @@ async fn init_git_config(plugin_name: &str) {
         "add",
         "--prefix",
         "cargokit",
-        "https://github.com/irondash/cargokit.git",
-        "main",
+        "https://github.com/mdddj/cargokit_ohos",
+        "master",
         "--squash"
     )
     .dir(p.clone())
@@ -301,6 +417,119 @@ async fn add_pubspec_script(plugin_name: &str) {
     info!("✅添加yaml依赖成功");
 }
 
+///配置Rust的OHOS target支持
+async fn setup_rust_ohos_targets() {
+    info!("开始配置Rust OHOS target支持...");
+
+    // 添加 aarch64-unknown-linux-ohos target
+    let result_aarch64 = cmd!("rustup", "target", "add", "aarch64-unknown-linux-ohos")
+        .stdout_null()
+        .run();
+
+    if result_aarch64.is_ok() {
+        info!("✅添加 aarch64-unknown-linux-ohos target 成功");
+    } else {
+        info!("⚠️ aarch64-unknown-linux-ohos target 可能已存在或添加失败");
+    }
+
+    // 添加 x86_64-unknown-linux-ohos target (可选，用于模拟器)
+    let result_x86_64 = cmd!("rustup", "target", "add", "x86_64-unknown-linux-ohos")
+        .stdout_null()
+        .run();
+
+    if result_x86_64.is_ok() {
+        info!("✅添加 x86_64-unknown-linux-ohos target 成功");
+    } else {
+        info!("⚠️ x86_64-unknown-linux-ohos target 可能已存在或添加失败");
+    }
+}
+
+///生成OHOS配置说明文档
+async fn generate_ohos_setup_guide(plugin_name: &str) {
+    let mut dir = env::current_dir().unwrap();
+    dir.push(plugin_name);
+    dir.push("OHOS_SETUP.md");
+
+    let guide_content = r#"# HarmonyOS Next 配置指南
+
+本插件已支持 HarmonyOS Next 平台。请按照以下步骤完成配置：
+
+## 1. 安装 OHOS SDK
+
+下载并安装 OHOS SDK：
+https://developer.huawei.com/consumer/cn/download/
+
+## 2. 配置 Rust 交叉编译
+
+### 创建编译脚本
+
+在 `~/.ohos/script/` 目录下创建以下脚本文件：
+
+#### aarch64-unknown-linux-ohos-clang.sh
+```bash
+#!/bin/sh
+exec /usr/local/ohos-sdk/linux/native/llvm/bin/clang \
+  -target aarch64-linux-ohos \
+  --sysroot=/usr/local/ohos-sdk/linux/native/sysroot \
+  -D__MUSL__ \
+  "$@"
+```
+
+#### aarch64-unknown-linux-ohos-clang++.sh
+```bash
+#!/bin/sh
+exec /usr/local/ohos-sdk/linux/native/llvm/bin/clang++ \
+  -target aarch64-linux-ohos \
+  --sysroot=/usr/local/ohos-sdk/linux/native/sysroot \
+  -D__MUSL__ \
+  "$@"
+```
+
+### 添加可执行权限
+```bash
+chmod +x ~/.ohos/script/*.sh
+```
+
+### 配置 Cargo
+
+在 `~/.cargo/config.toml` 中添加：
+
+```toml
+[target.aarch64-unknown-linux-ohos]
+ar = "/usr/local/ohos-sdk/linux/native/llvm/bin/llvm-ar"
+linker = ".ohos/script/aarch64-unknown-linux-ohos-clang.sh"
+```
+
+**注意**：将 `/usr/local/ohos-sdk/linux` 替换为你的 OHOS SDK native 目录的父文件夹路径。
+
+## 3. 设置环境变量
+
+```bash
+export AR=/usr/local/ohos-sdk/linux/native/llvm/bin/llvm-ar
+export CC="~/.ohos/script/aarch64-unknown-linux-ohos-clang.sh"
+```
+
+## 4. 构建项目
+
+配置完成后，使用 Flutter 命令构建 OHOS 平台：
+
+```bash
+flutter build ohos
+```
+
+## 参考资料
+
+- [Flutter Rust Bridge 文档](https://cjycode.com/flutter_rust_bridge/)
+- [HarmonyOS 开发者文档](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/application-dev-guide-V5)
+"#;
+
+    let mut file = File::create(dir).await.expect("创建OHOS_SETUP.md失败");
+    file.write_all(guide_content.as_bytes())
+        .await
+        .expect("写入OHOS_SETUP.md失败");
+    info!("✅生成鸿蒙配置指南成功");
+}
+
 ///添加示例rust目录和文件 /api/hello.rs
 async fn add_test_rs_file(plugin_name: &str) {
     let mut dir = env::current_dir().unwrap();
@@ -363,6 +592,7 @@ async fn main() {
 
         let git_task = task::spawn(async move { init_git_config(&name).await });
         let _ = git_task.await;
+
         // add_frb_yaml_file(&plugin_name).await;
         // add_macos_script(&plugin_name).await;
         // add_ios_script(&plugin_name).await;
@@ -379,7 +609,16 @@ async fn main() {
         let linux_name = Arc::clone(&plugin_name);
         let android_name = Arc::clone(&plugin_name);
         let pubspc_name = Arc::clone(&plugin_name);
+        let ohos_name = Arc::clone(&plugin_name);
+        let ohos_guide_name = Arc::clone(&plugin_name);
         let test_name = Arc::clone(&plugin_name);
+
+        // 首先配置 Rust OHOS targets
+        setup_rust_ohos_targets().await;
+
+        let ohos_code_fetch = OhosGenerate::create(ohos_name.as_ref().clone());
+        ohos_code_fetch.fetch_github_temp().await;
+        ohos_code_fetch.releace_plugin_name().await;
 
         let tasks = vec![
             task::spawn(async move { add_rust_lib_project(&add_rust_name).await }),
@@ -390,6 +629,7 @@ async fn main() {
             task::spawn(async move { add_linux_script(&linux_name).await }),
             task::spawn(async move { add_android_script(&android_name).await }),
             task::spawn(async move { add_pubspec_script(&pubspc_name).await }),
+            task::spawn(async move { generate_ohos_setup_guide(&ohos_guide_name).await }),
         ];
         future::join_all(tasks).await;
         info!("✅项目创建成功,开始写入test文件");
