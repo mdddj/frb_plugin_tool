@@ -1,6 +1,8 @@
-# frb_plugin_tool
+# frb_plugin_tool_ohos
 
 快速生成 Flutter Rust Bridge (FRB) 插件项目的命令行工具，支持多平台包括 HarmonyOS Next (鸿蒙系统)。
+
+
 
 ## 🎉 特性
 
@@ -182,6 +184,16 @@ frb_plugin_tool_ohos presetup \
 
 ---
 
+## 4. 给当前插件项目添加鸿蒙支持
+
+
+```bash
+frb_plugin_tool_ohos add-support
+```
+
+> 需要在插件项目的根目录下执行 (要读取 pubspec.yaml下面的 name属性)
+
+
 ## 📝 完整工作流程示例
 
 ### 1. 配置 OHOS 开发环境
@@ -231,5 +243,3 @@ flutter build ohos
 ## 💬 反馈与支持
 
 QQ 群: 706438100
-
-

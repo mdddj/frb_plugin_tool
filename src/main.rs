@@ -1,14 +1,18 @@
 use clap::{Parser, Subcommand};
 use duct::cmd;
 use futures::future;
-use std::{env, io, path::PathBuf, sync::Arc};
+use serde::Deserialize;
+use std::fs;
+use std::path::PathBuf;
+use std::{env, io, sync::Arc};
 use tera::{Context, Tera};
+use thiserror::Error;
 use tokio::{
-    fs::{create_dir, create_dir_all, read_to_string, write, File, OpenOptions},
+    fs::{File, OpenOptions, create_dir, create_dir_all, read_to_string, write},
     io::AsyncWriteExt,
     task,
 };
-use tracing::info;
+use tracing::{error, info};
 use tracing_subscriber::fmt;
 use walkdir::WalkDir;
 
@@ -59,6 +63,7 @@ enum Commands {
         #[arg(short, long)]
         force: bool,
     },
+    AddSupport,
 }
 
 fn set_log_event() {
@@ -380,10 +385,32 @@ impl OhosGenerate {
         .expect("下载ohos模板文件失败");
     }
 
+    async fn fetch_github_temp_current(self: &Self) {
+        info!("开始下载 ohos软件包");
+        let path = env::current_dir().expect("获取执行目录失败");
+        let _ = cmd!(
+            "git",
+            "clone",
+            format!("{}", OHOS_DIRECTORY_GIT_URL),
+            "ohos"
+        )
+        .dir(path)
+        .run()
+        .expect("下载ohos模板文件失败");
+    }
+
     async fn releace_plugin_name(self: &Self) {
         let plugin_name = self.plugin_name.clone();
         let mut path = env::current_dir().expect("获取执行目录失败");
         path.push(plugin_name.clone());
+        path.push("ohos");
+        info!("开始替换包名{:?},{}", path, plugin_name);
+        let _ = replace_plugin_name_in_files(path, &plugin_name).await;
+    }
+
+    async fn releace_plugin_name_current(self: &Self) {
+        let plugin_name = self.plugin_name.clone();
+        let mut path = env::current_dir().expect("获取执行目录失败");
         path.push("ohos");
         info!("开始替换包名{:?},{}", path, plugin_name);
         let _ = replace_plugin_name_in_files(path, &plugin_name).await;
@@ -565,6 +592,21 @@ async fn run_flutter_plugin_create(plugin_name: &str, fvm_flutter_version: &str)
         .run();
         result.is_ok()
     }
+}
+
+///给示例 example 项目添加 ohos支持
+async fn add_example_project_init_ohos(plugin_name: String) {
+    info!("开始给示例项目添加ohos模块支持");
+    let mut p = env::current_dir().unwrap();
+    p.push(format!("{plugin_name}"));
+    p.push("example");
+    cmd!("fvm", "flutter", "create", "--platforms=ohos", ".")
+        .dir(env::current_dir().expect("获取目录失败"))
+        .env("PATH", get_path_env())
+        .stdout_null()
+        .run()
+        .unwrap();
+    info!("✅开始给示例项目添加ohos模块支持");
 }
 
 ///初始化git项目,并克隆cargokit项目
@@ -866,6 +908,9 @@ async fn execute_create_plugin(plugin_name: String, fvm_flutter_version: String)
         return;
     }
 
+    //给示例项目添加 ohos支持
+    add_example_project_init_ohos(plugin_name.as_ref().to_owned()).await;
+
     let name = Arc::clone(&plugin_name);
     let git_task = task::spawn(async move { init_git_config(&name).await });
     let _ = git_task.await;
@@ -909,6 +954,55 @@ async fn execute_create_plugin(plugin_name: String, fvm_flutter_version: String)
     info!("🎉 所有任务完成！插件 {} 已创建成功", plugin_name);
 }
 
+/// 定义可能发生的错误类型，使错误处理更清晰。
+#[derive(Error, Debug)]
+pub enum PubspecError {
+    /// IO 错误，例如文件不存在或没有读取权限。
+    #[error("无法读取 pubspec.yaml 文件: {0}")]
+    Io(#[from] std::io::Error),
+
+    /// YAML 解析错误，例如文件格式不正确或缺少 `name` 字段。
+    #[error("解析 pubspec.yaml 失败: {0}")]
+    Yaml(#[from] serde_yaml::Error),
+}
+
+/// 定义我们关心的 `pubspec.yaml` 文件结构。
+/// 我们只需要 `name` 字段，所以只定义它。
+/// `#[derive(Deserialize)]` 宏会自动为我们实现反序列化逻辑。
+#[derive(Deserialize, Debug)]
+struct Pubspec {
+    name: String,
+}
+
+/// 解析当前目录中的 pubspec.yaml 文件，并返回顶级的 `name` 属性值。
+///
+/// # 返回
+/// - `Ok(String)`: 如果成功，返回移除前后空格的 `name` 值。
+/// - `Err(PubspecError)`: 如果发生错误，返回具体的错误类型。
+pub fn get_pubspec_name() -> Result<String, PubspecError> {
+    // 1. 获取当前执行目录的路径
+    let mut path = std::env::current_dir()?;
+
+    // 2. 将 "pubspec.yaml" 文件名附加到路径末尾
+    path.push("pubspec.yaml");
+
+    // 3. 读取文件内容到字符串中
+    // `?` 操作符会在发生 IO 错误时自动返回 `Err(PubspecError::Io)`
+    let content = fs::read_to_string(&path)?;
+
+    // 4. 使用 serde_yaml 将文件内容解析到 `Pubspec` 结构体中
+    // 如果 YAML 格式错误或缺少 `name` 字段，这里会返回错误。
+    // `?` 操作符会在发生解析错误时自动返回 `Err(PubspecError::Yaml)`
+    let pubspec: Pubspec = serde_yaml::from_str(&content)?;
+
+    // 5. 获取 `name` 字段的值，使用 `trim()` 移除前后空格，
+    //    并使用 `to_string()` 转换回一个拥有的 String 类型。
+    let trimmed_name = pubspec.name.trim().to_string();
+
+    // 6. 返回成功的结果
+    Ok(trimmed_name)
+}
+
 #[tokio::main]
 async fn main() {
     set_log_event();
@@ -950,6 +1044,21 @@ async fn main() {
             match presetup.setup().await {
                 Ok(_) => info!("🎉 OHOS 开发环境配置成功！"),
                 Err(e) => info!("❌ 配置失败: {}", e),
+            }
+        }
+        Commands::AddSupport => {
+            info!("开始给当前插件添加鸿蒙支持");
+            //获取插件名称(从执行目录中读取 pubspec.yaml, name属性读取)
+            match get_pubspec_name() {
+                Ok(plugin_name) => {
+                    let ohos_gen = OhosGenerate::create(plugin_name);
+                    ohos_gen.fetch_github_temp_current().await;
+                    ohos_gen.releace_plugin_name_current().await;
+                }
+                Err(e) => match e {
+                    PubspecError::Io(error) => error!("pubspec.yaml文件不存在{:?}", error),
+                    PubspecError::Yaml(error) => error!("解析 pubspec.yaml失败,{:?}", error),
+                },
             }
         }
     }

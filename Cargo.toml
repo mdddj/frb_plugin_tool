@@ -1,6 +1,6 @@
 [package]
 name = "frb_plugin_tool_ohos"
-version = "0.2.7"
+version = "0.3.0"
 edition = "2024"
 authors = ["hlxsmail@gmail.com"]
 license = "MIT OR Apache-2.0"
@@ -22,3 +22,6 @@ tokio = { version = "1.44.0", features = ["full"] }
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
 walkdir = "2"
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"
+thiserror = "1.0"
