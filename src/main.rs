@@ -1,3 +1,4 @@
+use clap::{Parser, Subcommand};
 use duct::cmd;
 use futures::future;
 use std::{env, io, path::PathBuf, sync::Arc};
@@ -13,6 +14,38 @@ use walkdir::WalkDir;
 
 //插件模板文件仓库地址
 const OHOS_DIRECTORY_GIT_URL: &str = "https://github.com/mdddj/flutter_rust_plugin_ohos_temp";
+
+/// Flutter Rust Bridge Plugin 工具
+#[derive(Parser)]
+#[command(name = "frb_plugin_tool")]
+#[command(author, version, about, long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    /// 创建新的 Flutter Rust Bridge 插件项目
+    Create {
+        /// 插件名称 (例如: my_plugin, hello_world)
+        #[arg(short, long)]
+        name: String,
+
+        #[arg(short, long)]
+        fvm_flutter_version: String,
+    },
+    /// 替换目录中的 REPLACE_PLUGIN_NAME 占位符
+    Replace {
+        /// 目标目录路径
+        #[arg(short, long)]
+        dir: PathBuf,
+
+        /// 用于替换的插件名称
+        #[arg(short, long)]
+        name: String,
+    },
+}
 
 fn set_log_event() {
     // 初始化 tracing 子系统
@@ -32,7 +65,9 @@ impl OhosGenerate {
 
     //下载 ohos目录,和替换名称
     async fn fetch_github_temp(self: &Self) {
-        let path = env::current_dir().expect("获取执行目录失败");
+        info!("开始下载 ohos软件包");
+        let mut path = env::current_dir().expect("获取执行目录失败");
+        path.push(self.plugin_name.clone());
         let _ = cmd!(
             "git",
             "clone",
@@ -49,7 +84,8 @@ impl OhosGenerate {
         let mut path = env::current_dir().expect("获取执行目录失败");
         path.push(plugin_name.clone());
         path.push("ohos");
-        let _ = replace_plugin_name_in_files(path, &plugin_name);
+        info!("开始替换包名{:?},{}", path, plugin_name);
+        let _ = replace_plugin_name_in_files(path, &plugin_name).await;
     }
 }
 
@@ -163,17 +199,9 @@ async fn replace_plugin_name_in_files(dir_path: PathBuf, file_name: &str) -> io:
     );
     Ok(())
 }
-//获取插件名
-fn get_plugin_name() -> String {
-    let mut input = String::new();
-    info!("请输入合法dart插件名字(例:hello_dart,hi_ldd_plugin):");
-    let _ = io::stdin().read_line(&mut input).expect("读取项目名失败");
-    input = input.trim().to_string();
-    input
-}
 
 //创建插件项目目录
-async fn run_flutter_plugin_create(plugin_name: &str) -> bool {
+async fn run_flutter_plugin_create(plugin_name: &str, fvm_flutter_version: &str) -> bool {
     info!("开始创建插件目录:{},请稍等...", plugin_name);
     if cfg!(windows) {
         let result = cmd!(
@@ -190,7 +218,7 @@ async fn run_flutter_plugin_create(plugin_name: &str) -> bool {
         .run();
         result.is_ok()
     } else {
-        let _ = cmd!("fvm", "use", "custom_3.27-oh").run();
+        let _ = cmd!("fvm", "use", fvm_flutter_version).run();
         let result = cmd!(
             "fvm",
             "flutter",
@@ -198,7 +226,7 @@ async fn run_flutter_plugin_create(plugin_name: &str) -> bool {
             "--template=plugin_ffi",
             format!("{plugin_name}"),
             "--platforms",
-            "android,ios,macos,windows,linux,ohos"
+            "android,ios,macos,windows,linux"
         )
         .dir(env::current_dir().expect("获取目录失败"))
         .env("PATH", get_path_env())
@@ -276,9 +304,10 @@ async fn add_rust_lib_project(plugin_name: &str) {
 
 ///从github上加载
 async fn fetch_github_temp_file_string(file_name: &str) -> Result<String, reqwest::Error> {
-    let url =
-        format!("https://raw.githubusercontent.com/mdddj/frb_plugin_tool/main/temp/{file_name}");
-    info!("开始从github下载模板:{url}");
+    let url = format!(
+        "https://raw.githubusercontent.com/mdddj/frb_plugin_tool/refs/heads/ohos/temp/{file_name}"
+    );
+    info!("开始从github下载模板:{file_name}");
     let response = reqwest::get(url.as_str()).await?.text().await?;
     info!("✅加载模板引擎文本成功 {file_name}");
     Ok(response)
@@ -582,60 +611,82 @@ async fn add_test_rs_file(plugin_name: &str) {
     info!("✅写入rust test api成功")
 }
 
+/// 执行创建插件的完整流程
+async fn execute_create_plugin(plugin_name: String, fvm_flutter_version: String) {
+    let plugin_name = Arc::new(plugin_name);
+    let is_ok = run_flutter_plugin_create(&plugin_name, &fvm_flutter_version).await;
+
+    if !is_ok {
+        info!("❌ 创建插件失败");
+        return;
+    }
+
+    let name = Arc::clone(&plugin_name);
+    let git_task = task::spawn(async move { init_git_config(&name).await });
+    let _ = git_task.await;
+
+    let yaml_name = Arc::clone(&plugin_name);
+    let add_rust_name = Arc::clone(&plugin_name);
+    let macos_name = Arc::clone(&plugin_name);
+    let ios_name = Arc::clone(&plugin_name);
+    let windows_name = Arc::clone(&plugin_name);
+    let linux_name = Arc::clone(&plugin_name);
+    let android_name = Arc::clone(&plugin_name);
+    let pubspc_name = Arc::clone(&plugin_name);
+    let ohos_name = Arc::clone(&plugin_name);
+    let ohos_guide_name = Arc::clone(&plugin_name);
+    let test_name = Arc::clone(&plugin_name);
+
+    // 首先配置 Rust OHOS targets
+    setup_rust_ohos_targets().await;
+
+    let ohos_code_fetch = OhosGenerate::create(ohos_name.as_ref().clone());
+    ohos_code_fetch.fetch_github_temp().await;
+    ohos_code_fetch.releace_plugin_name().await;
+
+    let tasks = vec![
+        task::spawn(async move { add_rust_lib_project(&add_rust_name).await }),
+        task::spawn(async move { add_frb_yaml_file(&yaml_name).await }),
+        task::spawn(async move { add_macos_script(&macos_name).await }),
+        task::spawn(async move { add_ios_script(&ios_name).await }),
+        task::spawn(async move { add_windows_script(&windows_name).await }),
+        task::spawn(async move { add_linux_script(&linux_name).await }),
+        task::spawn(async move { add_android_script(&android_name).await }),
+        task::spawn(async move { add_pubspec_script(&pubspc_name).await }),
+        task::spawn(async move { generate_ohos_setup_guide(&ohos_guide_name).await }),
+    ];
+    future::join_all(tasks).await;
+
+    info!("✅项目创建成功,开始写入test文件");
+    let add_file_task = vec![task::spawn(
+        async move { add_test_rs_file(&test_name).await },
+    )];
+    future::join_all(add_file_task).await;
+
+    info!("🎉 所有任务完成！插件 {} 已创建成功", plugin_name);
+}
+
 #[tokio::main]
 async fn main() {
     set_log_event();
-    let plugin_name = Arc::new(get_plugin_name());
-    let is_ok = run_flutter_plugin_create(&plugin_name).await;
-    if is_ok {
-        let name = Arc::clone(&plugin_name);
 
-        let git_task = task::spawn(async move { init_git_config(&name).await });
-        let _ = git_task.await;
+    let cli = Cli::parse();
+    let command = cli.command;
 
-        // add_frb_yaml_file(&plugin_name).await;
-        // add_macos_script(&plugin_name).await;
-        // add_ios_script(&plugin_name).await;
-        // add_windows_script(&plugin_name).await;
-        // add_linux_script(&plugin_name).await;
-        // add_android_script(&plugin_name).await;
-        // add_pubspec_script(&plugin_name).await;
-        // add_test_rs_file(&plugin_name).await;
-        let yaml_name = Arc::clone(&plugin_name);
-        let add_rust_name = Arc::clone(&plugin_name);
-        let macos_name = Arc::clone(&plugin_name);
-        let ios_name = Arc::clone(&plugin_name);
-        let windows_name = Arc::clone(&plugin_name);
-        let linux_name = Arc::clone(&plugin_name);
-        let android_name = Arc::clone(&plugin_name);
-        let pubspc_name = Arc::clone(&plugin_name);
-        let ohos_name = Arc::clone(&plugin_name);
-        let ohos_guide_name = Arc::clone(&plugin_name);
-        let test_name = Arc::clone(&plugin_name);
-
-        // 首先配置 Rust OHOS targets
-        setup_rust_ohos_targets().await;
-
-        let ohos_code_fetch = OhosGenerate::create(ohos_name.as_ref().clone());
-        ohos_code_fetch.fetch_github_temp().await;
-        ohos_code_fetch.releace_plugin_name().await;
-
-        let tasks = vec![
-            task::spawn(async move { add_rust_lib_project(&add_rust_name).await }),
-            task::spawn(async move { add_frb_yaml_file(&yaml_name).await }),
-            task::spawn(async move { add_macos_script(&macos_name).await }),
-            task::spawn(async move { add_ios_script(&ios_name).await }),
-            task::spawn(async move { add_windows_script(&windows_name).await }),
-            task::spawn(async move { add_linux_script(&linux_name).await }),
-            task::spawn(async move { add_android_script(&android_name).await }),
-            task::spawn(async move { add_pubspec_script(&pubspc_name).await }),
-            task::spawn(async move { generate_ohos_setup_guide(&ohos_guide_name).await }),
-        ];
-        future::join_all(tasks).await;
-        info!("✅项目创建成功,开始写入test文件");
-        let add_file_task = vec![task::spawn(
-            async move { add_test_rs_file(&test_name).await },
-        )];
-        future::join_all(add_file_task).await;
+    match command {
+        Commands::Create {
+            name,
+            fvm_flutter_version,
+        } => {
+            info!("开始创建插件: {}", name);
+            execute_create_plugin(name, fvm_flutter_version).await;
+        }
+        Commands::Replace { dir, name } => {
+            info!("开始替换目录 {:?} 中的占位符为 {}", dir, name);
+            match replace_plugin_name_in_files(dir, &name).await {
+                Ok(_) => info!("✅ 替换完成"),
+                Err(e) => info!("❌ 替换失败: {}", e),
+            }
+        }
     }
 }
