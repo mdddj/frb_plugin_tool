@@ -1075,13 +1075,9 @@ async fn main() {
             info!("开始添加鸿蒙版本cargokit");
             cmd!(
                 "git",
-                "subtree",
-                "add",
-                "--prefix",
-                "cargokit",
+                "clone",
                 "https://github.com/mdddj/cargokit_ohos",
-                "master",
-                "--squash"
+                "cargokit"
             )
             .dir(dir)
             .run()
