@@ -12,7 +12,7 @@ use tokio::{
     io::AsyncWriteExt,
     task,
 };
-use tracing::{error, info};
+use tracing::{error, info, warn};
 use tracing_subscriber::fmt;
 use walkdir::WalkDir;
 
@@ -63,8 +63,12 @@ enum Commands {
         #[arg(short, long)]
         force: bool,
     },
+    ///给当前插件项目添加鸿蒙支持
     AddSupport,
+    /// 添加鸿蒙 Cargo Kit 配置
     AddCargoKit,
+    /// 忽略鸿蒙构建产物
+    AddGitIgnore,
 }
 
 fn set_log_event() {
@@ -1004,8 +1008,32 @@ pub fn get_pubspec_name() -> Result<String, PubspecError> {
     Ok(trimmed_name)
 }
 
+async fn add_ignore_file(file: &mut File) -> io::Result<()> {
+    let ig_file_arr = [
+        "ohos/.CXX",
+        "ohos/build",
+        "ohos/oh_modules",
+        "ohos/oh-package-lock.json5",
+        "example/ohos/node_modules",
+        "example/ohos/oh_modules",
+        "example/ohos/oh-package-lock.json5",
+        "example/ohos/package-lock.json",
+        "example/ohos/.idea",
+        "example/ohos/.hvigor",
+    ];
+    file.write_all(b"\n").await?;
+    file.write_all(b"OHOS Build\n").await?;
+    for item in ig_file_arr {
+        let line = format!("{}\n", item);
+        file.write_all(line.as_bytes()).await?;
+        info!(" - {}", item);
+    }
+    info!("✅追加ignore文件成功");
+    Ok(())
+}
+
 #[tokio::main]
-async fn main() {
+async fn main() -> io::Result<()> {
     set_log_event();
 
     let cli = Cli::parse();
@@ -1084,5 +1112,39 @@ async fn main() {
             .expect("下载cargokit失败");
             info!("✅下载成功");
         }
+        Commands::AddGitIgnore => {
+            //查找.gitignore文件
+            let cur_dir = env::current_dir().expect("获取执行目录失败");
+            let gitignore_path = cur_dir.join(".gitignore");
+            if gitignore_path.exists() {
+                info!("找到.gitignore文件");
+
+                //追加忽略的文件
+                let mut file = File::options()
+                    .append(true)
+                    .open(gitignore_path)
+                    .await
+                    .expect("打开文件失败");
+                add_ignore_file(&mut file).await?;
+            } else {
+                warn!("添加失败:未找到.gitignore文件");
+            }
+
+            let pubignore_path = cur_dir.join(".pubignore");
+            if pubignore_path.exists() {
+                info!("找到.pubignore文件");
+
+                //追加忽略的文件
+                let mut file = File::options()
+                    .append(true)
+                    .open(pubignore_path)
+                    .await
+                    .expect("打开文件失败");
+                add_ignore_file(&mut file).await?;
+            } else {
+                warn!("添加失败:未找到.pubignore文件");
+            }
+        }
     }
+    Ok(())
 }
