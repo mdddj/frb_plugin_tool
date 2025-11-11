@@ -1,6 +1,6 @@
 [package]
 name = "frb_plugin_tool_ohos"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2024"
 authors = ["hlxsmail@gmail.com"]
 license = "MIT OR Apache-2.0"

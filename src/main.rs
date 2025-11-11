@@ -64,6 +64,7 @@ enum Commands {
         force: bool,
     },
     AddSupport,
+    AddCargoKit,
 }
 
 fn set_log_event() {
@@ -566,7 +567,7 @@ async fn run_flutter_plugin_create(plugin_name: &str, fvm_flutter_version: &str)
             "--template=plugin_ffi",
             format!("{plugin_name}"),
             "--platforms",
-            "android,ios,macos,windows,linux,ohos"
+            "android,ios,macos,windows,linux"
         )
         .dir(env::current_dir().expect("获取目录失败"))
         .env("PATH", get_path_env())
@@ -1060,6 +1061,32 @@ async fn main() {
                     PubspecError::Yaml(error) => error!("解析 pubspec.yaml失败,{:?}", error),
                 },
             }
+        }
+        Commands::AddCargoKit => {
+            //重新添加鸿蒙版本的cargokit
+            let mut curr_dir = env::current_dir().expect("获取执行目录失败");
+            let dir = curr_dir.clone();
+            curr_dir.push("cargokit");
+            if curr_dir.exists() {
+                info!("删除旧版本 cargokit");
+                tokio::fs::remove_dir_all(curr_dir).await.unwrap();
+                info!("✅删除旧版本 cargokit成功")
+            }
+            info!("开始添加鸿蒙版本cargokit");
+            cmd!(
+                "git",
+                "subtree",
+                "add",
+                "--prefix",
+                "cargokit",
+                "https://github.com/mdddj/cargokit_ohos",
+                "master",
+                "--squash"
+            )
+            .dir(dir)
+            .run()
+            .expect("下载cargokit失败");
+            info!("✅下载成功");
         }
     }
 }
