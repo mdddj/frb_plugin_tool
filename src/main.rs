@@ -606,12 +606,29 @@ async fn add_example_project_init_ohos(plugin_name: String) {
     p.push(format!("{plugin_name}"));
     p.push("example");
     cmd!("fvm", "flutter", "create", "--platforms=ohos", ".")
-        .dir(env::current_dir().expect("获取目录失败"))
+        .dir(p)
         .env("PATH", get_path_env())
         .stdout_null()
         .run()
         .unwrap();
     info!("✅开始给示例项目添加ohos模块支持");
+}
+
+//设置 fvm版本
+async fn project_use_fvm_version(path: PathBuf, version: String) {
+    info!("开始设置项目的 fvm版本");
+    let result = cmd!("fvm", "use", format!("{version}"))
+        .dir(path)
+        .env("PATH", get_path_env())
+        .run();
+    match result {
+        Ok(_) => {
+            info!("设置项目版本成功");
+        }
+        Err(e) => {
+            warn!("设置项目 fvm版本失败:{:?}", e);
+        }
+    }
 }
 
 ///初始化git项目,并克隆cargokit项目
@@ -956,6 +973,16 @@ async fn execute_create_plugin(plugin_name: String, fvm_flutter_version: String)
     )];
     future::join_all(add_file_task).await;
 
+    //设置项目 fvm版本号
+    let mut path = env::current_dir().expect("获取执行路径失败");
+    let plugin_file_name = plugin_name.clone().as_ref().clone();
+    path.push(plugin_file_name);
+
+    //设置 git ignore 忽略的文件
+    let _ = set_gitignore_file(path.clone()).await;
+
+    project_use_fvm_version(path, fvm_flutter_version.clone()).await;
+
     info!("🎉 所有任务完成！插件 {} 已创建成功", plugin_name);
 }
 
@@ -1008,6 +1035,41 @@ pub fn get_pubspec_name() -> Result<String, PubspecError> {
     Ok(trimmed_name)
 }
 
+//设置 git忽略掉的文件
+async fn set_gitignore_file(path: PathBuf) -> io::Result<()> {
+    let cur_dir = path;
+    let gitignore_path = cur_dir.join(".gitignore");
+    if gitignore_path.exists() {
+        info!("找到.gitignore文件");
+
+        //追加忽略的文件
+        let mut file = File::options()
+            .append(true)
+            .open(gitignore_path)
+            .await
+            .expect("打开文件失败");
+        add_ignore_file(&mut file).await?;
+    } else {
+        warn!("添加失败:未找到.gitignore文件");
+    }
+
+    let pubignore_path = cur_dir.join(".pubignore");
+    if pubignore_path.exists() {
+        info!("找到.pubignore文件");
+
+        //追加忽略的文件
+        let mut file = File::options()
+            .append(true)
+            .open(pubignore_path)
+            .await
+            .expect("打开文件失败");
+        add_ignore_file(&mut file).await?;
+    } else {
+        warn!("添加失败:未找到.pubignore文件");
+    }
+    Ok(())
+}
+
 async fn add_ignore_file(file: &mut File) -> io::Result<()> {
     let ig_file_arr = [
         "ohos/.CXX",
@@ -1022,7 +1084,6 @@ async fn add_ignore_file(file: &mut File) -> io::Result<()> {
         "example/ohos/.hvigor",
     ];
     file.write_all(b"\n").await?;
-    file.write_all(b"OHOS Build\n").await?;
     for item in ig_file_arr {
         let line = format!("{}\n", item);
         file.write_all(line.as_bytes()).await?;
@@ -1115,35 +1176,7 @@ async fn main() -> io::Result<()> {
         Commands::AddGitIgnore => {
             //查找.gitignore文件
             let cur_dir = env::current_dir().expect("获取执行目录失败");
-            let gitignore_path = cur_dir.join(".gitignore");
-            if gitignore_path.exists() {
-                info!("找到.gitignore文件");
-
-                //追加忽略的文件
-                let mut file = File::options()
-                    .append(true)
-                    .open(gitignore_path)
-                    .await
-                    .expect("打开文件失败");
-                add_ignore_file(&mut file).await?;
-            } else {
-                warn!("添加失败:未找到.gitignore文件");
-            }
-
-            let pubignore_path = cur_dir.join(".pubignore");
-            if pubignore_path.exists() {
-                info!("找到.pubignore文件");
-
-                //追加忽略的文件
-                let mut file = File::options()
-                    .append(true)
-                    .open(pubignore_path)
-                    .await
-                    .expect("打开文件失败");
-                add_ignore_file(&mut file).await?;
-            } else {
-                warn!("添加失败:未找到.pubignore文件");
-            }
+            set_gitignore_file(cur_dir).await?;
         }
     }
     Ok(())
